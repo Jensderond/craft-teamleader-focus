@@ -12,9 +12,10 @@ use Craft;
 use craft\base\ElementInterface;
 
 use verbb\formie\base\Field;
+use verbb\formie\fields\definitions\FieldValueType;
 use verbb\formie\helpers\SchemaHelper;
 use verbb\formie\helpers\ValidationMessagesHelper;
-use verbb\formie\models\HtmlTag;
+use verbb\formie\models\BrowserModule;
 use verbb\formie\models\SlotTag;
 use verbb\formie\positions\Hidden as HiddenPosition;
 use verbb\formie\theme\context\RenderContext;
@@ -97,10 +98,11 @@ class ClientType extends Field
      * @inheritdoc
      *
      * @author CraftPulse
+     * @since  6.0.0
      */
-    public static function phpType(): string
+    public static function getInputTemplatePath(): string
     {
-        return 'string';
+        return 'teamleader-focus/integrations/formie/_formfields/client-type/field';
     }
 
     // Public Methods
@@ -114,18 +116,6 @@ class ClientType extends Field
     public function getIsRequired(): bool
     {
         return true;
-    }
-
-    /**
-     * @inheritdoc
-     *
-     * @author CraftPulse
-     */
-    public function getFieldTypeDefaults(): array
-    {
-        return [
-            'required' => true,
-        ];
     }
 
     /**
@@ -154,46 +144,6 @@ class ClientType extends Field
      *
      * @author CraftPulse
      */
-    public function getInputHtml(mixed $value, ?ElementInterface $element = null): string
-    {
-        return Craft::$app->getView()->renderTemplate('teamleader-focus/integrations/formie/_formfields/client-type/input', [
-            'name' => $this->handle,
-            'value' => $value,
-            'field' => $this,
-            'options' => $this->getFieldOptions(),
-        ]);
-    }
-
-    /**
-     * @inheritdoc
-     *
-     * @author CraftPulse
-     */
-    public function getPreviewInputHtml(): string
-    {
-        return Craft::$app->getView()->renderTemplate('teamleader-focus/integrations/formie/_formfields/client-type/preview', [
-            'field' => $this,
-        ]);
-    }
-
-    /**
-     * @inheritdoc
-     *
-     * @author CraftPulse
-     */
-    public function getFrontEndJsModules(): ?array
-    {
-        return [
-            'src' => Craft::$app->getAssetManager()->getPublishedUrl('@verbb/formie/web/assets/frontend/dist/', true, 'js/fields/checkbox-radio.js'),
-            'module' => 'FormieCheckboxRadio',
-        ];
-    }
-
-    /**
-     * @inheritdoc
-     *
-     * @author CraftPulse
-     */
     public function getFormBuilderSettings(): array
     {
         $settings = parent::getFormBuilderSettings();
@@ -206,17 +156,47 @@ class ClientType extends Field
     }
 
     /**
+     * Apply the theme config of Formie's Radio Buttons field.
+     *
+     * @author CraftPulse
+     * @since  6.0.0
+     */
+    public function themeConfigKey(): string
+    {
+        return 'radioButtons';
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @author CraftPulse
+     * @since  6.0.0
+     */
+    public function defineFormBuilderPreviewSchema(): array
+    {
+        return [
+            SchemaHelper::previewChoiceList('radio', [
+                'options' => [
+                    ['label' => SchemaHelper::previewBind('field.companyLabel', 'Company'), 'value' => self::TYPE_COMPANY],
+                    ['label' => SchemaHelper::previewBind('field.contactLabel', 'Client'), 'value' => self::TYPE_CONTACT],
+                ],
+                'useOptionDefaults' => false,
+            ]),
+        ];
+    }
+
+    /**
      * @inheritdoc
      *
      * @author CraftPulse
      */
-    public function defineGeneralSchema(): array
+    public function defineFormBuilderGeneralSchema(): array
     {
         return [
             SchemaHelper::labelField(),
             SchemaHelper::selectField([
                 'label' => Craft::t('formie', 'Default Value'),
-                'help' => Craft::t('formie', 'The default selected option when the form loads.'),
+                'instructions' => Craft::t('formie', 'The default selected option when the form loads.'),
                 'name' => 'defaultValue',
                 'options' => [
                     ['label' => Craft::t('formie', 'Company (B2B)'), 'value' => self::TYPE_COMPANY],
@@ -225,12 +205,12 @@ class ClientType extends Field
             ]),
             SchemaHelper::textField([
                 'label' => Craft::t('formie', 'Company Label'),
-                'help' => Craft::t('formie', 'The label displayed for the Company option.'),
+                'instructions' => Craft::t('formie', 'The label displayed for the Company option.'),
                 'name' => 'companyLabel',
             ]),
             SchemaHelper::textField([
                 'label' => Craft::t('formie', 'Client Label'),
-                'help' => Craft::t('formie', 'The label displayed for the Client option.'),
+                'instructions' => Craft::t('formie', 'The label displayed for the Client option.'),
                 'name' => 'contactLabel',
             ]),
         ];
@@ -241,13 +221,45 @@ class ClientType extends Field
      *
      * @author CraftPulse
      */
-    public function defineAppearanceSchema(): array
+    public function defineFormBuilderSettingsSchema(): array
+    {
+        return [
+            SchemaHelper::prefillQueryParam(),
+            SchemaHelper::includeInEmailFieldSummariesField(),
+            SchemaHelper::emailFieldSummaryValue([
+                'options' => [
+                    ['label' => Craft::t('formie', 'Label'), 'value' => 'label'],
+                    ['label' => Craft::t('formie', 'Value'), 'value' => 'value'],
+                ],
+            ]),
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @author CraftPulse
+     * @since  6.0.0
+     */
+    public function defineFormBuilderValidationSchema(): array
+    {
+        return [
+            SchemaHelper::requiredValidationMessage(),
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @author CraftPulse
+     */
+    public function defineFormBuilderAppearanceSchema(): array
     {
         return [
             SchemaHelper::visibility(),
             SchemaHelper::selectField([
                 'label' => Craft::t('formie', 'Layout'),
-                'help' => Craft::t('formie', 'Select which direction to show the options.'),
+                'instructions' => Craft::t('formie', 'Select which direction to show the options.'),
                 'name' => 'layout',
                 'options' => [
                     ['label' => Craft::t('formie', 'Vertical'), 'value' => 'vertical'],
@@ -265,38 +277,14 @@ class ClientType extends Field
      *
      * @author CraftPulse
      */
-    public function defineSettingsSchema(): array
-    {
-        return [
-            SchemaHelper::textField([
-                'label' => Craft::t('formie', 'Error Message'),
-                'help' => Craft::t('formie', 'When validating the form, show this message if an error occurs. Leave empty to retain the default message.'),
-                'name' => 'errorMessage',
-            ]),
-            SchemaHelper::prePopulate(),
-            SchemaHelper::includeInEmailField(),
-            SchemaHelper::emailNotificationValue([
-                'options' => [
-                    ['label' => Craft::t('formie', 'Label'), 'value' => 'label'],
-                    ['label' => Craft::t('formie', 'Value'), 'value' => 'value'],
-                ],
-            ]),
-        ];
-    }
-
-    /**
-     * @inheritdoc
-     *
-     * @author CraftPulse
-     */
-    public function defineAdvancedSchema(): array
+    public function defineFormBuilderAdvancedSchema(): array
     {
         return [
             SchemaHelper::handleField(),
             SchemaHelper::cssClasses(),
             SchemaHelper::containerAttributesField(),
             SchemaHelper::inputAttributesField([
-                'help' => Craft::t('formie', "Add attributes to be outputted on this field's input. Note that these attributes will be added to every radio option."),
+                'instructions' => Craft::t('formie', "Add attributes to be outputted on this field's input. Note that these attributes will be added to every radio option."),
             ]),
         ];
     }
@@ -306,194 +294,12 @@ class ClientType extends Field
      *
      * @author CraftPulse
      */
-    public function defineConditionsSchema(): array
+    public function defineFormBuilderConditionsSchema(): array
     {
         return [
             SchemaHelper::enableConditionsField(),
             SchemaHelper::conditionsField(),
         ];
-    }
-
-    /**
-     * @inheritdoc
-     *
-     * @author CraftPulse
-     */
-    public function defineHtmlTag(string $key, array $context = []): ?HtmlTag
-    {
-        $form = $context['form'] ?? null;
-
-        if ($key === 'fieldContainer') {
-            $id = $this->getHtmlId($form);
-
-            return new HtmlTag('fieldset', [
-                'class' => [
-                    'fui-fieldset',
-                    'fui-layout-' . $this->layout,
-                ],
-                'aria-describedby' => $this->instructions ? "{$id}-instructions" : null,
-            ]);
-        }
-
-        if ($key === 'fieldLabel') {
-            $labelPosition = $context['labelPosition'] ?? null;
-
-            return new HtmlTag('legend', [
-                'class' => [
-                    'fui-legend',
-                ],
-                'data' => [
-                    'field-label' => true,
-                    'fui-sr-only' => $labelPosition instanceof HiddenPosition ? true : false,
-                ],
-            ]);
-        }
-
-        if ($key === 'fieldOptions') {
-            return new HtmlTag('div', [
-                'class' => 'fui-layout-wrap',
-            ]);
-        }
-
-        if ($key === 'fieldOption') {
-            return new HtmlTag('div', [
-                'class' => 'fui-radio',
-            ]);
-        }
-
-        if ($key === 'fieldInput') {
-            $optionValue = $context['option']['value'] ?? '';
-
-            return new HtmlTag('input', [
-                'type' => 'radio',
-                'id' => $this->getHtmlId($form, $optionValue),
-                'class' => 'fui-input fui-radio-input',
-                'name' => $this->getHtmlName(),
-                'required' => $this->required ? true : null,
-                'data' => [
-                    'fui-id' => $this->getHtmlDataId($form, $optionValue),
-                ],
-            ]);
-        }
-
-        if ($key === 'fieldOptionLabel') {
-            $optionValue = $context['option']['value'] ?? '';
-
-            return new HtmlTag('label', [
-                'class' => 'fui-radio-label',
-                'for' => $this->getHtmlId($form, $optionValue),
-            ]);
-        }
-
-        // Formie 4 has no parent implementation: it only falls back to this
-        // method for tags its own renderer does not define.
-        return method_exists(parent::class, 'defineHtmlTag') ? parent::defineHtmlTag($key, $context) : null;
-    }
-
-    /**
-     * Formie 4: front-end input template (Formie 3 looks up `fields/client-type`).
-     *
-     * @author CraftPulse
-     * @since  5.3.0
-     */
-    public static function getInputTemplatePath(): string
-    {
-        return 'teamleader-focus/integrations/formie/_formfields/client-type/field';
-    }
-
-    /**
-     * Formie 4: apply the theme config of Formie's Radio Buttons field.
-     *
-     * @author CraftPulse
-     * @since  5.3.0
-     */
-    public function themeConfigKey(): string
-    {
-        return 'radioButtons';
-    }
-
-    /**
-     * Formie 4: form builder preview, replacing {@see getPreviewInputHtml()}.
-     *
-     * @author CraftPulse
-     * @since  5.3.0
-     */
-    public function defineFormBuilderPreviewSchema(): array
-    {
-        return [
-            SchemaHelper::previewChoiceList('radio', [
-                'options' => [
-                    ['label' => SchemaHelper::previewBind('field.companyLabel', 'Company'), 'value' => self::TYPE_COMPANY],
-                    ['label' => SchemaHelper::previewBind('field.contactLabel', 'Client'), 'value' => self::TYPE_CONTACT],
-                ],
-                'useOptionDefaults' => false,
-            ]),
-        ];
-    }
-
-    /**
-     * @author CraftPulse
-     * @since  5.3.0
-     */
-    public function defineFormBuilderGeneralSchema(): array
-    {
-        return $this->defineGeneralSchema();
-    }
-
-    /**
-     * @author CraftPulse
-     * @since  5.3.0
-     */
-    public function defineFormBuilderSettingsSchema(): array
-    {
-        return [
-            SchemaHelper::prefillQueryParam(),
-            SchemaHelper::includeInEmailFieldSummariesField(),
-            SchemaHelper::emailFieldSummaryValue([
-                'options' => [
-                    ['label' => Craft::t('formie', 'Label'), 'value' => 'label'],
-                    ['label' => Craft::t('formie', 'Value'), 'value' => 'value'],
-                ],
-            ]),
-        ];
-    }
-
-    /**
-     * @author CraftPulse
-     * @since  5.3.0
-     */
-    public function defineFormBuilderValidationSchema(): array
-    {
-        return [
-            SchemaHelper::requiredValidationMessage(),
-        ];
-    }
-
-    /**
-     * @author CraftPulse
-     * @since  5.3.0
-     */
-    public function defineFormBuilderAppearanceSchema(): array
-    {
-        return $this->defineAppearanceSchema();
-    }
-
-    /**
-     * @author CraftPulse
-     * @since  5.3.0
-     */
-    public function defineFormBuilderAdvancedSchema(): array
-    {
-        return $this->defineAdvancedSchema();
-    }
-
-    /**
-     * @author CraftPulse
-     * @since  5.3.0
-     */
-    public function defineFormBuilderConditionsSchema(): array
-    {
-        return $this->defineConditionsSchema();
     }
 
     /**
@@ -524,11 +330,39 @@ class ClientType extends Field
     // =========================================================================
 
     /**
-     * Formie 4: front-end tags, replacing {@see defineHtmlTag()}. Mirrors
-     * Formie's Radio Buttons field so its browser module and theme config apply.
+     * @inheritdoc
      *
      * @author CraftPulse
-     * @since  5.3.0
+     * @since  6.0.0
+     */
+    protected function defineValueType(): FieldValueType
+    {
+        return FieldValueType::string();
+    }
+
+    /**
+     * Use the browser module of Formie's Radio Buttons field.
+     *
+     * @author CraftPulse
+     * @since  6.0.0
+     */
+    protected function defineBrowserModules(): array
+    {
+        $modules = parent::defineBrowserModules();
+        $modules[] = new BrowserModule([
+            'moduleId' => 'formie:checkbox-radio',
+            'surfaces' => [BrowserModule::SURFACE_SERVER_RENDERED],
+        ]);
+
+        return $modules;
+    }
+
+    /**
+     * Front-end tags. Mirrors Formie's Radio Buttons field so its browser module
+     * and theme config apply.
+     *
+     * @author CraftPulse
+     * @since  6.0.0
      */
     protected function defineSlotTag(string $key, RenderContext $context): ?SlotTag
     {
@@ -642,10 +476,10 @@ class ClientType extends Field
     }
 
     /**
-     * Formie 4: control panel submission input, replacing {@see getInputHtml()}.
+     * Control panel submission input.
      *
      * @author CraftPulse
-     * @since  5.3.0
+     * @since  6.0.0
      */
     protected function defineSubmissionHtml(mixed $value, ?ElementInterface $element, bool $inline): string
     {

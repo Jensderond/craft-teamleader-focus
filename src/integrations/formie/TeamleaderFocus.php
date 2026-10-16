@@ -248,23 +248,6 @@ class TeamleaderFocus extends Crm implements OAuthProviderInterface
     }
 
     /**
-     * Form settings UI for Formie 3. Formie 4 uses {@see defineFormSettingsSchema()} instead.
-     *
-     * @throws Exception
-     * @throws LoaderError
-     * @throws RuntimeError
-     * @throws SyntaxError
-     *
-     * @author CraftPulse
-     */
-    public function getFormSettingsHtml($form): string
-    {
-        $formSettings = $this->getFormSettingsHtmlVariables($form);
-
-        return Craft::$app->getView()->renderTemplate('teamleader-focus/integrations/formie/_form-settings', $formSettings);
-    }
-
-    /**
      * @author CraftPulse
      */
     public function getApiDomain(): string
@@ -772,14 +755,12 @@ class TeamleaderFocus extends Crm implements OAuthProviderInterface
     // =========================================================================
 
     /**
-     * Form settings UI for Formie 4, which replaced the Twig-based
-     * {@see getFormSettingsHtml()} with a settings schema. Mirrors
-     * `_form-settings.twig`. Every property targeted here must carry
-     * `#[FormIntegrationSetting]`, otherwise Formie 4 neither saves it per form
-     * nor applies it to the integration when a submission is sent.
+     * Per-form settings UI on the form's Integrations tab. Every property
+     * targeted here must carry `#[FormIntegrationSetting]`, otherwise Formie
+     * neither saves it per form nor applies it when a submission is sent.
      *
      * @author CraftPulse
-     * @since  5.3.0
+     * @since  6.0.0
      */
     protected function defineFormSettingsSchema(FormInterface $form): array
     {
@@ -877,15 +858,15 @@ class TeamleaderFocus extends Crm implements OAuthProviderInterface
     /**
      * Drop mapped fields that resolved to an empty value (null, '' or []).
      *
-     * Formie 3 left these out of getFieldMappingValues(); Formie 4 returns every
-     * mapped field. Sending them would e.g. add an empty primary email or address,
+     * Formie's getFieldMappingValues() returns every mapped field, including
+     * empty ones. Sending them would e.g. add an empty primary email or address,
      * which the Teamleader API rejects.
      *
      * @param  array<string, mixed> $values
      * @return array<string, mixed>
      *
      * @author CraftPulse
-     * @since  5.3.0
+     * @since  6.0.0
      */
     private function _withoutEmptyValues(array $values): array
     {

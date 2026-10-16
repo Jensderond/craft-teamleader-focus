@@ -9,3 +9,10 @@ parameters:
         -
             identifier: class.missingExtends
             path: src/fields/formie/ClientType.php
+            reportUnmatched: false
+        # Formie 3 only code path (getFormSettingsHtml); the method was removed in Formie 4.
+        -
+            identifier: method.notFound
+            message: '#getFormSettingsHtmlVariables\(\)#'
+            path: src/integrations/formie/TeamleaderFocus.php
+            reportUnmatched: false

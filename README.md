@@ -6,7 +6,7 @@ The Teamleader plugin is a powerful tool for integrating Craft CMS with Teamlead
 
 ## Requirements
 
-This plugin requires Craft CMS 5.0.0 or later.
+This plugin requires Craft CMS 5.0.0 or later and Formie 3 or 4.
 
 # Teamleader Plugin for Craft CMS 5.x
 

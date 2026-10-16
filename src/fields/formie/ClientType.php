@@ -13,8 +13,11 @@ use craft\base\ElementInterface;
 
 use verbb\formie\base\Field;
 use verbb\formie\helpers\SchemaHelper;
+use verbb\formie\helpers\ValidationMessagesHelper;
 use verbb\formie\models\HtmlTag;
+use verbb\formie\models\SlotTag;
 use verbb\formie\positions\Hidden as HiddenPosition;
+use verbb\formie\theme\context\RenderContext;
 
 /**
  * Class ClientType
@@ -382,7 +385,115 @@ class ClientType extends Field
             ]);
         }
 
-        return parent::defineHtmlTag($key, $context);
+        // Formie 4 has no parent implementation: it only falls back to this
+        // method for tags its own renderer does not define.
+        return method_exists(parent::class, 'defineHtmlTag') ? parent::defineHtmlTag($key, $context) : null;
+    }
+
+    /**
+     * Formie 4: front-end input template (Formie 3 looks up `fields/client-type`).
+     *
+     * @author CraftPulse
+     * @since  5.3.0
+     */
+    public static function getInputTemplatePath(): string
+    {
+        return 'teamleader-focus/integrations/formie/_formfields/client-type/field';
+    }
+
+    /**
+     * Formie 4: apply the theme config of Formie's Radio Buttons field.
+     *
+     * @author CraftPulse
+     * @since  5.3.0
+     */
+    public function themeConfigKey(): string
+    {
+        return 'radioButtons';
+    }
+
+    /**
+     * Formie 4: form builder preview, replacing {@see getPreviewInputHtml()}.
+     *
+     * @author CraftPulse
+     * @since  5.3.0
+     */
+    public function defineFormBuilderPreviewSchema(): array
+    {
+        return [
+            SchemaHelper::previewChoiceList('radio', [
+                'options' => [
+                    ['label' => SchemaHelper::previewBind('field.companyLabel', 'Company'), 'value' => self::TYPE_COMPANY],
+                    ['label' => SchemaHelper::previewBind('field.contactLabel', 'Client'), 'value' => self::TYPE_CONTACT],
+                ],
+                'useOptionDefaults' => false,
+            ]),
+        ];
+    }
+
+    /**
+     * @author CraftPulse
+     * @since  5.3.0
+     */
+    public function defineFormBuilderGeneralSchema(): array
+    {
+        return $this->defineGeneralSchema();
+    }
+
+    /**
+     * @author CraftPulse
+     * @since  5.3.0
+     */
+    public function defineFormBuilderSettingsSchema(): array
+    {
+        return [
+            SchemaHelper::prefillQueryParam(),
+            SchemaHelper::includeInEmailFieldSummariesField(),
+            SchemaHelper::emailFieldSummaryValue([
+                'options' => [
+                    ['label' => Craft::t('formie', 'Label'), 'value' => 'label'],
+                    ['label' => Craft::t('formie', 'Value'), 'value' => 'value'],
+                ],
+            ]),
+        ];
+    }
+
+    /**
+     * @author CraftPulse
+     * @since  5.3.0
+     */
+    public function defineFormBuilderValidationSchema(): array
+    {
+        return [
+            SchemaHelper::requiredValidationMessage(),
+        ];
+    }
+
+    /**
+     * @author CraftPulse
+     * @since  5.3.0
+     */
+    public function defineFormBuilderAppearanceSchema(): array
+    {
+        return $this->defineAppearanceSchema();
+    }
+
+    /**
+     * @author CraftPulse
+     * @since  5.3.0
+     */
+    public function defineFormBuilderAdvancedSchema(): array
+    {
+        return $this->defineAdvancedSchema();
+    }
+
+    /**
+     * @author CraftPulse
+     * @since  5.3.0
+     */
+    public function defineFormBuilderConditionsSchema(): array
+    {
+        return $this->defineConditionsSchema();
     }
 
     /**
@@ -407,5 +518,141 @@ class ClientType extends Field
     public function isContactRequest(mixed $value): bool
     {
         return $value === self::TYPE_CONTACT;
+    }
+
+    // Protected Methods
+    // =========================================================================
+
+    /**
+     * Formie 4: front-end tags, replacing {@see defineHtmlTag()}. Mirrors
+     * Formie's Radio Buttons field so its browser module and theme config apply.
+     *
+     * @author CraftPulse
+     * @since  5.3.0
+     */
+    protected function defineSlotTag(string $key, RenderContext $context): ?SlotTag
+    {
+        $form = $context->form;
+        $optionValue = (string)($context->toArray()['option']['value'] ?? '');
+
+        if ($key === 'fieldLayout') {
+            return SlotTag::make('fieldset')
+                ->core([
+                    'data-formie-field-layout' => true,
+                    'data-formie-radio-field-layout' => true,
+                    'data-formie-layout' => $this->layout,
+                    'aria-describedby' => $this->hasInstructions() ? "{$this->getHtmlId($form)}-instructions" : null,
+                ])
+                ->theme([
+                    'class' => [
+                        'formie-field-layout',
+                        'formie-radio-field-layout',
+                        'formie-layout-' . $this->layout,
+                    ],
+                ]);
+        }
+
+        if ($key === 'fieldLabel') {
+            $isHiddenLabel = $context->get('labelPosition') instanceof HiddenPosition || str_contains(strtolower($this->labelPosition ?? ''), 'hidden');
+
+            return SlotTag::make('legend')
+                ->core([
+                    'data-formie-label' => true,
+                    'data-formie-field-label' => true,
+                    'data-formie-radio-field-label' => true,
+                    'data-formie-sr-only' => $isHiddenLabel,
+                ])
+                ->theme([
+                    'class' => [
+                        'formie-label',
+                        'formie-field-label',
+                        'formie-radio-field-label',
+                        $isHiddenLabel ? 'formie-sr-only' : false,
+                    ],
+                ]);
+        }
+
+        if ($key === 'fieldOptions') {
+            return SlotTag::make('div')
+                ->core([
+                    'data-formie-field-options' => true,
+                    'data-formie-radio-options' => true,
+                    'data-formie-layout' => $this->layout,
+                ])
+                ->theme([
+                    'class' => [
+                        'formie-field-options',
+                        'formie-radio-options',
+                        'formie-layout-' . $this->layout,
+                    ],
+                ]);
+        }
+
+        if ($key === 'fieldOption') {
+            return SlotTag::make('div')
+                ->core([
+                    'data-formie-field-option' => true,
+                    'data-formie-radio-option' => true,
+                ])
+                ->theme([
+                    'class' => [
+                        'formie-field-option',
+                        'formie-radio-option',
+                    ],
+                ]);
+        }
+
+        if ($key === 'fieldInput') {
+            return SlotTag::make('input')
+                ->core(array_merge([
+                    'type' => 'radio',
+                    'id' => $this->getHtmlId($form, $optionValue),
+                    'name' => $this->getHtmlName(),
+                    'required' => true,
+                    'data-formie-input' => true,
+                    'data-formie-radio-input' => true,
+                    'data-formie-input-id' => $this->getHtmlDataId($form, $optionValue),
+                    'data-formie-input-type' => 'radio',
+                ], ValidationMessagesHelper::requiredBrowserAttributes($this)))
+                ->theme([
+                    'class' => [
+                        'formie-input',
+                        'formie-radio-input',
+                    ],
+                ])
+                ->instanceAttributes($this->getInputAttributes());
+        }
+
+        if ($key === 'fieldOptionLabel') {
+            return SlotTag::make('label')
+                ->core([
+                    'data-formie-field-option-label' => true,
+                    'data-formie-radio-option-label' => true,
+                    'for' => $this->getHtmlId($form, $optionValue),
+                ])
+                ->theme([
+                    'class' => [
+                        'formie-field-option-label',
+                        'formie-radio-option-label',
+                    ],
+                ]);
+        }
+
+        return parent::defineSlotTag($key, $context);
+    }
+
+    /**
+     * Formie 4: control panel submission input, replacing {@see getInputHtml()}.
+     *
+     * @author CraftPulse
+     * @since  5.3.0
+     */
+    protected function defineSubmissionHtml(mixed $value, ?ElementInterface $element, bool $inline): string
+    {
+        return Craft::$app->getView()->renderTemplate('formie/_formfields/radio/input', [
+            'name' => $this->handle,
+            'value' => $value,
+            'options' => $this->getFieldOptions(),
+        ]);
     }
 }

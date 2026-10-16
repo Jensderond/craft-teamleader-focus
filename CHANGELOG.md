@@ -1,5 +1,15 @@
 # Release Notes for Teamleader
 
+## Unreleased
+### Added
+- Added support for Formie 4. Formie 3 remains supported.
+- Added a Formie 4 form settings schema for the integration (`defineFormSettingsSchema()`) and marked its per-form settings with `#[FormIntegrationSetting]`, so Formie 4 saves them and applies them when sending a submission.
+- Added Formie 4 front-end rendering, form builder preview, settings tabs and control panel input for the Client Type field.
+
+### Fixed
+- Fixed every submission failing on Formie 4 because `ClientTypeHelper` called `Form::getCustomFields()`, which Formie 4 removed.
+- Fixed empty mapped values (e.g. an empty email address) being sent to Teamleader on Formie 4, which returns every mapped field where Formie 3 left empty ones out.
+
 ## 5.2.4 - 2026-08-04
 ### Fixed
 - Fixed an error that occurred when opening a form's Teamleader integration settings in Formie, because the "Update custom fields partially" lightswitches referenced Twig variables that were never defined.
